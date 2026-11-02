@@ -1,5 +1,14 @@
 # Verification record — November 2, 2026
 
+## Version 1.0.2 update — November 3, 2026
+
+- **83 automated tests passed** with no skipped tests. New tests cover environment/local-file precedence, private atomic saves, matching hidden input, refusal to echo a key, local removal, header authentication, public/key-specific cache separation, redacted errors, health metadata containing only credential presence, redirect rejection, and ignoring an older running app after an update.
+- The full desktop/mobile Chromium flow passed, including the local-key setup instructions. Optional key setup does not break public-mode analysis, match import/export, replay review, checklist persistence, or local AI rendering.
+- Only fictitious credentials were used in tests. A real paid API key was not sent or validated. Actual plan access and whether it changes the public-history response must be verified on the user's PC after local setup.
+- The setup prompt is covered with controlled terminal input; native Windows batch execution remains untested. The key file is plain text, not an encrypted vault; this is stated in the prompt and documentation.
+
+Earlier version verification records follow.
+
 ## Version 1.0.1 update — November 3, 2026
 
 - **55 automated tests passed**, with none skipped. Includes explicit history refresh replacing a cached empty response, using only eligible ranked matches from the recent endpoint, honest handling of unavailable or unranked recent history, safe running-instance detection, Windows address-in-use simulation, bounded port fallback, and propagation of other startup errors.

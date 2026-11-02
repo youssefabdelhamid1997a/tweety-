@@ -13,9 +13,10 @@ from urllib.parse import parse_qs, urlparse
 from coach.analysis import InputError, match_id, role_value
 from coach.ai import coach_reply
 from coach.client import APIError, OpenDota
+from coach.config import ConfigError
 from coach.demo import demo_report
 from coach.service import CoachService
-from coach.startup import APP_ID, DEFAULT_PORT, FALLBACK_PORTS, bind_server, is_address_in_use, is_coach_running
+from coach.startup import APP_ID, APP_VERSION, DEFAULT_PORT, FALLBACK_PORTS, bind_server, is_address_in_use, is_coach_running
 
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 10_000_000
@@ -60,7 +61,8 @@ def make_handler(service):
                 name, mime = files[url.path]
                 return self.send((ROOT / "static" / name).read_bytes(), content_type=mime + "; charset=utf-8")
             if url.path == "/api/health":
-                return self.send({"app": APP_ID, "status": "ok", "version": "1.0.1"})
+                return self.send({"app": APP_ID, "status": "ok", "version": APP_VERSION,
+                                  "opendota_key_configured": bool(getattr(service.client, "has_api_key", False))})
             if url.path == "/api/demo":
                 try:
                     role = role_value(parse_qs(url.query).get("role", ["carry"])[0])
@@ -150,6 +152,9 @@ def main():
                 return 0
     try:
         server = bind_server(create_server, port, allow_fallback=args.port is None)
+    except ConfigError as error:
+        print(f"OpenDota key setup needs attention: {error}\nRun set-api-key.bat, then reopen run.bat. Your key has not been printed.", flush=True)
+        return 1
     except OSError as error:
         if is_address_in_use(error):
             print(f"The requested coach port is occupied. Try: python server.py --port {min(port + 1, 65535)} --open", flush=True)
@@ -157,7 +162,7 @@ def main():
             print(f"Could not start the coach: {error}\nCheck that the extracted app folder is writable and keep this error message for troubleshooting.", flush=True)
         return 1
     url = f"http://127.0.0.1:{server.server_port}"
-    print(f"Dota Ascent is running at {url}\nKeep this window open. Closing it stops the coach. Press Ctrl+C to stop.\nTo reopen later, double-click run.bat.\nNo Steam password or paid API key is needed.", flush=True)
+    print(f"Dota Ascent is running at {url}\nKeep this window open. Closing it stops the coach. Press Ctrl+C to stop.\nTo reopen later, double-click run.bat.\nA paid OpenDota key is optional; use set-api-key.bat to configure one.", flush=True)
     if args.open:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     try:

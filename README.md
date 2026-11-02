@@ -4,7 +4,7 @@ A local dashboard for **ranked Dota 2**, prepared for friend ID **314758455** (S
 
 It connects to OpenDota, looks for patterns worth reviewing, and turns them into a five-game practice plan. Optional **local AI chat with Ollama** can discuss the report. The dashboard works without AI chat, a paid API key, a Steam password, or any Python package installations.
 
-Version **1.0.1** removes the automatic page jump after Analyze, checks fresh match history on every click, and explains empty results beside the button with retry and direct match-ID review options. If ranked history is empty but OpenDota's recent endpoint has eligible ranked games, those games are used with an explicit coverage note. Reopening an already running coach opens its browser again; an unrelated service on the default port causes the launcher to choose another free local port.
+Version **1.0.2** adds optional OpenDota API-key support through a hidden local setup prompt. It retains fresh-history checking, clear empty-result explanations, ranked recent-match fallback, and safe reopening without an automatic page jump.
 
 ## Run on Windows — no programming needed
 
@@ -15,6 +15,20 @@ Version **1.0.1** removes the automatic page jump after Analyze, checks fresh ma
 5. Start with **one** suggested exercise for your next five ranked games. Review the evidence matches and your in-game replays rather than treating a statistic as proof of a mistake.
 
 If the browser does not open, enter the address printed in the console (normally `http://127.0.0.1:8765`). Close the console or press **Ctrl+C** there to stop the app. Double-click `run.bat` to start it again. Clicking Analyze keeps you in place and shows a completion message; the results appear below. An empty response produces a clear explanation instead of a zero-filled dashboard.
+
+### Add your OpenDota API key
+
+1. If a key was shared in chat or a code comment, **regenerate it in OpenDota first**. Use the replacement only on your PC.
+2. Close every running coach console. In the extracted app folder, **double-click `set-api-key.bat`**.
+3. At **OpenDota API key:** paste only the key and press **Enter**. Nothing appears while you type or paste; this is normal. Paste the same key a second time when asked and press Enter again.
+4. Wait for **OpenDota API key saved**, then press any key to close setup. Double-click **`run.bat`**.
+5. The account panel should say **OpenDota API key configured**. Click **Analyze my matches** to make requests with it. “Configured” means a key was loaded; it does not prove that OpenDota accepted it. A rejected key produces a clear error.
+
+Do not edit either `.bat` file or paste the key into chat, a diff comment, or a PowerShell command. Setup stores it in `.local/opendota-api-key.json`, a local **plain-text, unencrypted** file excluded from Git and downloads. It uses private permissions on POSIX and your folder's inherited access permissions on Windows. Keep the `.local` folder private. The key is sent only by the local server to OpenDota in its supported `Authorization: Bearer` header; it is not put in URLs, exported reports, browser storage, or AI prompts. Redirects are rejected rather than forwarding the key elsewhere.
+
+Your OpenDota plan's usage/billing applies. The app keeps its conservative request pacing and five-match detailed-fetch limit. A subscription can provide your plan's API access; it does **not** guarantee recovery of hidden match history or expired replays.
+
+To replace a saved key, close the coach and rerun `set-api-key.bat`. To remove the local key, open PowerShell in the app folder and run `py -3 configure_api_key.py --remove`. Advanced users may supply `OPENDOTA_API_KEY` as an environment variable instead; a nonempty variable takes precedence over the local file. Restart after changing either source. No key is required for the public-access workflow.
 
 ### Optional: turn on the AI conversation
 
@@ -92,7 +106,7 @@ python -m unittest discover -s tests -v
 
 On Windows use `py -3` instead of `python` if needed. Tests use deterministic fixtures and mocked upstream responses; they do not require Internet or an AI model. They exercise coaching rules, HTTP integration, filtering, account ownership, caching, HTTPS requests, limits, and AI adapter behavior. A separate optional developer check, `python -m tests.browser_smoke`, needs Playwright and Chromium; it is not required for users. That browser runner defaults to `/usr/bin/chromium` in the cloud test environment.
 
-All **55 automated tests** and the desktop/mobile browser checks passed for version 1.0.1, including no page jump, fresh-history retry, ranked recent-match fallback, and safe relaunch behavior. See `VALIDATION.md` for the exact live-data checks and what remains unverified. A separate public reference match also verified real replay-field compatibility; it was not treated as your match history.
+All **83 automated tests** and the desktop/mobile browser checks passed for version 1.0.2. Credential tests use fictitious keys and verify configuration precedence, hidden entry, cache separation, header authentication, redacted errors, and rejected redirects. No real paid key was used in testing. See `VALIDATION.md` for the exact live-data checks and what remains unverified. A separate public reference match also verified real replay-field compatibility; it was not treated as your match history.
 
 **Validation boundary:** the app and browser flows were tested on Linux/Python 3.12, including desktop and mobile layouts. Windows batch execution and actual Ollama inference require testing on the user's Windows PC. Live OpenDota access was initially blocked by the cloud network allowlist; it became available after the configuration update. A live check identified **Tweety, Archon II**, but ranked, recent, and unfiltered match-history requests all returned **zero matches**. This verifies connectivity and the empty-history handling; it does not validate your personal gameplay or live replay analysis. Enable public match data, sign in to OpenDota, and let new matches become available. Private history is only one possible cause of an empty result; it has not been proven. The required `api.opendota.com` network rule and startup instructions are saved in the cloud configuration draft; draft saving is separate from publishing the final prepared filesystem. Ordinary Windows use relies on your own Internet connection.
 
@@ -100,6 +114,7 @@ All **55 automated tests** and the desktop/mobile browser checks passed for vers
 
 - `server.py`: loopback-only HTTP server, static app and API routes.
 - `coach/client.py`: fixed-host OpenDota requests, HTTPS verification, caching and pacing.
+- `coach/config.py`, `configure_api_key.py`, `set-api-key.bat`: optional local API-key settings and masked setup.
 - `coach/analysis.py`: normalization, missing-data handling and explainable coaching.
 - `coach/service.py`: player history, five-match enrichment and single-match import/review.
 - `coach/ai.py`: optional fixed-localhost Ollama adapter.

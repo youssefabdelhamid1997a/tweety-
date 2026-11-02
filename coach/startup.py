@@ -6,6 +6,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, ProxyHandler, build_opener
 
 APP_ID = "dota-ascent"
+APP_VERSION = "1.0.2"
 DEFAULT_PORT = 8765
 FALLBACK_PORTS = 10
 
@@ -24,7 +25,7 @@ def is_coach_running(port):
             if len(body) > 4096:
                 return False
             result = json.loads(body)
-            return isinstance(result, dict) and result.get("app") == APP_ID and result.get("status") == "ok"
+            return isinstance(result, dict) and result.get("app") == APP_ID and result.get("status") == "ok" and result.get("version") == APP_VERSION
     except (HTTPError, URLError, OSError, ValueError):
         return False
 

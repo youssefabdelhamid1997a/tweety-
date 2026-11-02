@@ -30,6 +30,7 @@ def main():
             # The final invalid-account scenario deliberately returns HTTP 400.
             page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" and "400 (Bad Request)" not in msg.text else None)
             page.goto(base)
+            expect(page.locator("#api-key-status")).to_contain_text("set-api-key.bat")
             assert page.locator("#account").input_value() == "314758455"
             assert page.locator("#dashboard").is_hidden()
             page.locator("#demo-button").click()

@@ -39,6 +39,19 @@ AI can be wrong; check its claims against your evidence and replay.
 No paid API key, Steam password, or programming commands are required
 for the dashboard. No Python package installation is required.
 
+IF YOU HAVE AN OPENDOTA API KEY:
+- Regenerate any key previously shared in chat or a code comment.
+- Close all running coach consoles.
+- Double-click set-api-key.bat in this folder.
+- At OpenDota API key:, paste your replacement key and press Enter.
+  Characters stay hidden. Paste it again when asked and press Enter.
+- When it says saved, press any key, then double-click run.bat.
+- The account panel says OpenDota API key configured. Click Analyze.
+Do not put the key into either .bat file or into a chat message.
+The key is stored in .local/opendota-api-key.json, a plain-text local file.
+Do not share the .local folder. Your OpenDota plan's API usage applies.
+The key does not guarantee availability of hidden games or old replays.
+
 Read README.md for troubleshooting, data limitations and developer tests.
 This app uses OpenDota parsed JSON, not raw .dem replay files.
 It cannot promise Divine or automatically prove why a game was lost.

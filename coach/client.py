@@ -1,6 +1,7 @@
 """OpenDota's public HTTPS API, with local caching and conservative rate limits."""
 
 import json
+import hashlib
 import socket
 import sqlite3
 import ssl
@@ -9,7 +10,19 @@ import time
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_opener
+
+from .config import load_api_key, validate_api_key
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, request, fp, code, message, headers, new_url):
+        return None
+
+
+def urlopen(request, timeout, context):
+    """Keep TLS verification and never forward an API key through a redirect."""
+    return build_opener(HTTPSHandler(context=context), _NoRedirect()).open(request, timeout=timeout)
 
 
 class APIError(Exception):
@@ -21,7 +34,9 @@ class APIError(Exception):
 class OpenDota:
     BASE = "https://api.opendota.com/api"
 
-    def __init__(self, cache_dir):
+    def __init__(self, cache_dir, api_key=None):
+        self._api_key = load_api_key(cache_dir) if api_key is None else validate_api_key(api_key)
+        self._cache_scope = "key:" + hashlib.sha256(self._api_key.encode()).hexdigest() if self._api_key else "public"
         self.path = Path(cache_dir) / "opendota.sqlite3"
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(self.path) as db:
@@ -30,9 +45,17 @@ class OpenDota:
         self.last_call = 0
         self.context = ssl.create_default_context()
 
+    @property
+    def has_api_key(self):
+        return bool(self._api_key)
+
+    def _cache_key(self, resource):
+        return self._cache_scope + ":" + resource
+
     def request(self, path, params=None, ttl=300, method="GET"):
         query = urlencode(params or [], doseq=True)
-        key = path + ("?" + query if query else "")
+        resource = path + ("?" + query if query else "")
+        key = self._cache_key(resource)
         if method == "GET":
             with sqlite3.connect(self.path) as db:
                 entry = db.execute("SELECT saved, body FROM cache WHERE key = ?", (key,)).fetchone()
@@ -41,8 +64,10 @@ class OpenDota:
         with self.lock:
             time.sleep(max(0, 1.1 - (time.monotonic() - self.last_call)))
             self.last_call = time.monotonic()
-            request = Request(self.BASE + key, method=method, data=b"" if method == "POST" else None,
-                              headers={"Accept": "application/json", "User-Agent": "DotaAscentCoach/1.0 (local personal coach)"})
+            headers = {"Accept": "application/json", "User-Agent": "DotaAscentCoach/1.0.2 (local personal coach)"}
+            if self._api_key:
+                headers["Authorization"] = "Bearer " + self._api_key
+            request = Request(self.BASE + resource, method=method, data=b"" if method == "POST" else None, headers=headers)
             try:
                 with urlopen(request, timeout=12, context=self.context) as response:
                     body = response.read(12_000_001)
@@ -54,8 +79,14 @@ class OpenDota:
                     raise APIError("OpenDota's rate limit was reached. Wait a minute and try again. Cached results need no additional calls.", 429) from exc
                 if exc.code == 404:
                     raise APIError("OpenDota could not find this player or match. Check the ID and public match-data setting.", 404) from exc
+                if exc.code == 401 and self.has_api_key:
+                    raise APIError("OpenDota rejected the configured API key. Run set-api-key.bat with an active replacement key, then restart the coach.", 502) from exc
+                if exc.code == 403 and self.has_api_key:
+                    raise APIError("OpenDota denied the request. Check that your API key and plan are active, and that your network permits api.opendota.com.", 502) from exc
                 if exc.code in (401, 403):
                     raise APIError("Access to OpenDota was denied. Check your connection or allow api.opendota.com in the cloud environment's network settings.", 502) from exc
+                if 300 <= exc.code < 400:
+                    raise APIError("OpenDota returned an unexpected redirect. The coach did not forward your API key. Please try again later.") from exc
                 raise APIError(f"OpenDota is unavailable (HTTP {exc.code}). Please try again later.") from exc
             except (URLError, TimeoutError, socket.timeout, OSError) as exc:
                 raise APIError("Could not reach OpenDota securely. Check your Internet connection and access to api.opendota.com. No sample data has been substituted.") from exc
@@ -86,10 +117,10 @@ class OpenDota:
         if not isinstance(result, dict) or not isinstance(result.get("job"), dict) or not result["job"].get("jobId"):
             raise APIError("OpenDota did not confirm a replay-parse job. Please try again later; no parsing success has been assumed.")
         with sqlite3.connect(self.path) as db:
-            db.execute("DELETE FROM cache WHERE key = ?", (f"/matches/{match}",))
+            db.execute("DELETE FROM cache WHERE key = ?", (self._cache_key(f"/matches/{match}"),))
         return result
 
     def refresh_match(self, match):
         with sqlite3.connect(self.path) as db:
-            db.execute("DELETE FROM cache WHERE key = ?", (f"/matches/{match}",))
+            db.execute("DELETE FROM cache WHERE key = ?", (self._cache_key(f"/matches/{match}"),))
         return self.match(match)

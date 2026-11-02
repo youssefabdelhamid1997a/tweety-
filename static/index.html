@@ -30,7 +30,7 @@
       <div class="goal-mark"><span class="rank-glyph">✧</span><div>THE LONG GAME<strong>Archon <span>→</span> Divine</strong><small>A goal to work toward, not a promised result.</small></div></div>
     </section>
     <section class="connect-panel" aria-labelledby="connect-title">
-      <div class="panel-heading"><div><span class="step-dot">01</span><h2 id="connect-title">Bring your matches into focus</h2></div><span class="subtle">No sign-in. No paid API key.</span></div>
+      <div class="panel-heading"><div><span class="step-dot">01</span><h2 id="connect-title">Bring your matches into focus</h2></div><span class="subtle">No Steam sign-in required.</span></div>
       <form id="connect-form">
         <div class="field account-field"><label for="account">Dota friend ID or Steam profile URL</label><input id="account" name="account" value="314758455" placeholder="e.g. 314758455" required autocomplete="off" spellcheck="false"><small>Your account is prefilled. Use a numeric friend ID or Steam /profiles/ link.</small></div>
         <div class="field"><label for="role">Role for this review</label><select id="role" name="role"><option value="auto">Infer cautiously</option><option value="carry">1 · Carry</option><option value="mid">2 · Mid</option><option value="offlane">3 · Offlane</option><option value="support">4 · Support</option><option value="hard_support">5 · Hard support</option></select><small>Choose a role if you played it throughout.</small></div>
@@ -38,6 +38,7 @@
         <button id="analyze-button" class="primary" type="submit">Analyze my matches <span>↗</span></button>
       </form>
       <div class="connect-foot"><span>In Dota: Settings → Social → <strong>Expose Public Match Data</strong></span><button id="demo-button" class="text-button" type="button">Explore sample dashboard →</button></div>
+      <p id="api-key-status" class="api-key-status">Have an OpenDota API key? Close the coach, double-click set-api-key.bat in its folder, enter your key privately, then reopen run.bat.</p>
     </section>
     <div id="status" class="status" role="status" aria-live="polite" hidden></div>
     <div id="error" class="error" role="alert" hidden></div>

@@ -1,0 +1,31 @@
+@echo off
+setlocal
+cd /d "%~dp0"
+if errorlevel 1 goto folder_error
+echo Dota Ascent - optional OpenDota API key setup.
+echo The key prompt is hidden. Do not paste the key into chat or share it.
+echo.
+py -3 -c "import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)" >nul 2>&1
+if not errorlevel 1 goto use_py
+python -c "import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)" >nul 2>&1
+if not errorlevel 1 goto use_python
+echo Please install Python 3.10 or newer from https://www.python.org/downloads/windows/
+echo Tick "Add Python to PATH" during installation, then double-click set-api-key.bat again.
+pause
+exit /b 1
+:use_py
+py -3 configure_api_key.py %*
+goto finished
+:use_python
+python configure_api_key.py %*
+goto finished
+:folder_error
+echo Could not open the coach folder. Extract the ZIP into a folder you can access.
+pause
+exit /b 1
+:finished
+set coach_exit=%errorlevel%
+echo.
+echo Close any running coach console, then double-click run.bat to apply changes.
+pause
+exit /b %coach_exit%

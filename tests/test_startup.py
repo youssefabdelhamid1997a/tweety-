@@ -66,6 +66,10 @@ class ExistingInstanceTests(unittest.TestCase):
         with endpoint({"status": "ok"}) as port:
             self.assertFalse(is_coach_running(port))
 
+    def test_older_coach_is_not_reused_after_update(self):
+        with endpoint({"app": APP_ID, "status": "ok", "version": "1.0.1"}) as port:
+            self.assertFalse(is_coach_running(port))
+
     def test_wrong_application_or_unhealthy_coach_is_not_reused(self):
         for body in ({"app": "other-app", "status": "ok"}, {"app": APP_ID, "status": "error"}):
             with self.subTest(body=body), endpoint(body) as port:

@@ -228,3 +228,8 @@ document.querySelectorAll("nav a").forEach((link) => link.addEventListener("clic
   document.querySelectorAll("nav a").forEach((a) => a.classList.remove("active"));
   link.classList.add("active");
 }));
+request("/api/health").then((health) => {
+  $("#api-key-status").textContent = health.opendota_key_configured
+    ? "OpenDota API key configured · used only by this local server. The key is never displayed here. Your plan's API usage applies."
+    : "Using public OpenDota access. To add your key: close the coach, double-click set-api-key.bat in its folder, enter the key privately, then reopen run.bat.";
+}).catch(() => { /* The normal analysis action provides a visible connection error. */ });
