@@ -45,11 +45,14 @@ class FixtureClient:
             self.rows.append(row)
             self.details[row["match_id"]] = detail
 
-    def matches(self, account, limit):
+    def matches(self, account, limit, refresh=False):
         return copy.deepcopy(self.rows[:limit])
 
-    def profile(self, account):
+    def profile(self, account, refresh=False):
         return {"profile": {"personaname": "Test Player"}, "rank_tier": 44}
+
+    def recent_matches(self, account, refresh=False):
+        return copy.deepcopy(self.rows[:20])
 
     def match(self, match):
         if match not in self.details:
@@ -174,6 +177,39 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(result["summary"]["matches"], 0)
         self.assertIsNone(result["summary"]["win_rate"])
         self.assertTrue(any("No eligible ranked matches" in w for w in result["warnings"]))
+        self.assertEqual(result["history"]["status"], "no_public_history")
+
+    def test_empty_ranked_endpoint_can_use_ranked_recent_games(self):
+        recent = copy.deepcopy(self.client.rows)
+        recent.append({**recent[0], "match_id": 12345, "lobby_type": 0})
+        self.client.rows = []
+        with patch.object(self.client, "recent_matches", return_value=recent):
+            result = self.service.analyze({"account": ACCOUNT, "refresh": True})
+        self.assertEqual(result["summary"]["matches"], 6)
+        self.assertTrue(result["history"]["used_recent_fallback"])
+        self.assertNotIn(12345, [m["match_id"] for m in result["matches"]])
+
+    def test_unranked_recent_games_are_explained_but_not_coached(self):
+        recent = [{**self.client.rows[0], "lobby_type": 0}]
+        self.client.rows = []
+        with patch.object(self.client, "recent_matches", return_value=recent):
+            result = self.service.analyze({"account": ACCOUNT})
+        self.assertEqual(result["summary"]["matches"], 0)
+        self.assertEqual(result["history"]["status"], "no_eligible_ranked")
+        self.assertEqual(result["history"]["recent_count"], 1)
+
+    def test_refresh_is_forwarded_to_history_and_profile(self):
+        with patch.object(self.client, "matches", wraps=self.client.matches) as matches, patch.object(self.client, "profile", wraps=self.client.profile) as profile:
+            self.service.analyze({"account": ACCOUNT, "refresh": True})
+        matches.assert_called_once_with(ACCOUNT, 20, refresh=True)
+        profile.assert_called_once_with(ACCOUNT, refresh=True)
+
+    def test_failed_recent_crosscheck_preserves_honest_empty_result(self):
+        self.client.rows = []
+        with patch.object(self.client, "recent_matches", side_effect=APIError("Unavailable")):
+            result = self.service.analyze({"account": ACCOUNT})
+        self.assertEqual(result["history"]["status"], "recent_unavailable")
+        self.assertEqual(result["summary"]["matches"], 0)
 
     def test_unavailable_replays_preserve_summary(self):
         with patch.object(self.client, "match", side_effect=APIError("Rate limited", 429)):
@@ -240,6 +276,13 @@ class TransportTests(unittest.TestCase):
             with self.subTest(status=status), patch("coach.client.urlopen", side_effect=failure), self.assertRaises(APIError) as caught:
                 self.client.profile(ACCOUNT)
             self.assertEqual(caught.exception.status, status)
+
+    def test_explicit_refresh_replaces_cached_empty_history(self):
+        with patch("coach.client.urlopen", side_effect=[io.BytesIO(b'[]'), io.BytesIO(b'[{"match_id":123,"lobby_type":7}]')]) as remote:
+            self.assertEqual(self.client.matches(ACCOUNT, 20), [])
+            self.assertEqual(len(self.client.matches(ACCOUNT, 20, refresh=True)), 1)
+            self.assertEqual(len(self.client.matches(ACCOUNT, 20)), 1)
+        self.assertEqual(remote.call_count, 2)
 
     def test_parse_is_explicit_post_and_invalidates_cache(self):
         methods = []

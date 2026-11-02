@@ -60,8 +60,12 @@ def main():
             page.wait_for_selector("#dashboard", state="visible")
             assert page.locator("[data-practice]").first.is_checked()
             page.locator("#role").select_option("carry")
+            page.evaluate("window.scrollTo(0, 0)")
+            before_analyze = page.evaluate("window.scrollY")
             page.locator("#analyze-button").click()
             expect(page.locator("#report-title")).to_contain_text("Test Player")
+            expect(page.locator("#status")).to_contain_text("Loaded 6 ranked matches")
+            assert page.evaluate("window.scrollY") == before_analyze, "Analyze unexpectedly jumped down the page"
             assert page.locator("#ai-answer").is_hidden()
             assert page.locator("#matches tr").count() == 6
             assert not page.locator("[data-practice]").first.is_checked()
@@ -88,8 +92,16 @@ def main():
             page.locator("#analyze-button").click()
             expect(page.locator("#report-meta")).to_contain_text("0 eligible matches")
             expect(page.locator("#warnings")).to_contain_text("No eligible ranked matches")
+            assert page.locator("#history-status").is_visible()
+            assert page.locator("#dashboard").is_hidden()
+            expect(page.locator("#history-status-description")).to_contain_text("friend ID 314758455")
             assert "SAMPLE" not in page.locator("#source-badge").inner_text()
             assert "No numeric observations" in page.locator("#trend-chart").inner_text()
+            client.rows = [match_fixture(0)[0]]
+            page.locator("#retry-history").click()
+            expect(page.locator("#report-meta")).to_contain_text("1 eligible matches")
+            assert page.locator("#history-status").is_hidden()
+            assert page.locator("#dashboard").is_visible()
             page.set_viewport_size({"width": 390, "height": 844})
             page.screenshot(path="/tmp/dota-ascent-mobile.png", full_page=True)
             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Mobile page overflows horizontally"

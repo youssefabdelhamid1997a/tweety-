@@ -66,13 +66,16 @@ class OpenDota:
                 db.execute("INSERT OR REPLACE INTO cache VALUES (?, ?, ?)", (key, time.time(), json.dumps(result)))
         return result
 
-    def profile(self, account):
-        return self.request(f"/players/{account}")
+    def profile(self, account, refresh=False):
+        return self.request(f"/players/{account}", ttl=0 if refresh else 300)
 
-    def matches(self, account, limit):
+    def matches(self, account, limit, refresh=False):
         fields = ["hero_id", "start_time", "duration", "game_mode", "lobby_type", "version", "kills", "deaths", "assists",
                   "leaver_status", "gold_per_min", "xp_per_min", "last_hits", "tower_damage", "lane_role", "is_roaming"]
-        return self.request(f"/players/{account}/matches", [("lobby_type", 7), ("limit", limit), ("project", fields)])
+        return self.request(f"/players/{account}/matches", [("lobby_type", 7), ("limit", limit), ("project", fields)], ttl=0 if refresh else 300)
+
+    def recent_matches(self, account, refresh=False):
+        return self.request(f"/players/{account}/recentMatches", ttl=0 if refresh else 300)
 
     def match(self, match):
         return self.request(f"/matches/{match}", ttl=86400)

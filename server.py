@@ -2,6 +2,8 @@
 
 import argparse
 import json
+import os
+import socket
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -13,6 +15,7 @@ from coach.ai import coach_reply
 from coach.client import APIError, OpenDota
 from coach.demo import demo_report
 from coach.service import CoachService
+from coach.startup import APP_ID, DEFAULT_PORT, FALLBACK_PORTS, bind_server, is_address_in_use, is_coach_running
 
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 10_000_000
@@ -57,7 +60,7 @@ def make_handler(service):
                 name, mime = files[url.path]
                 return self.send((ROOT / "static" / name).read_bytes(), content_type=mime + "; charset=utf-8")
             if url.path == "/api/health":
-                return self.send({"status": "ok", "version": "1.0.0"})
+                return self.send({"app": APP_ID, "status": "ok", "version": "1.0.1"})
             if url.path == "/api/demo":
                 try:
                     role = role_value(parse_qs(url.query).get("role", ["carry"])[0])
@@ -113,23 +116,48 @@ def make_handler(service):
     return Handler
 
 
+class LocalHTTPServer(ThreadingHTTPServer):
+    # Winsock's SO_REUSEADDR can let a second process take the same listening
+    # address. Keep restart reuse on POSIX, but bind exclusively on Windows.
+    allow_reuse_address = os.name != "nt"
+
+    def server_bind(self):
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def create_server(port=8765, cache_dir=None, client=None):
     client = client or OpenDota(cache_dir or ROOT / ".local")
-    return ThreadingHTTPServer(("127.0.0.1", port), make_handler(CoachService(client)))
+    return LocalHTTPServer(("127.0.0.1", port), make_handler(CoachService(client)))
 
 
 def main():
     parser = argparse.ArgumentParser(description="Dota Ascent — your local, evidence-based Dota 2 coach")
-    parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--port", type=int, help="Use a specific port (default: 8765, with automatic fallback if occupied)")
     parser.add_argument("--open", action="store_true", help="Open your default browser")
     args = parser.parse_args()
+    if args.port is not None and not 0 <= args.port <= 65535:
+        parser.error("--port must be between 0 and 65535")
+    port = DEFAULT_PORT if args.port is None else args.port
+    if args.open and port:
+        candidates = range(port, min(port + FALLBACK_PORTS, 65535) + 1) if args.port is None else (port,)
+        for candidate in candidates:
+            if is_coach_running(candidate):
+                url = f"http://127.0.0.1:{candidate}"
+                print(f"The coach is already running. Opening {url}\nKeep its original console window open.", flush=True)
+                webbrowser.open(url)
+                return 0
     try:
-        server = create_server(args.port)
-    except OSError:
-        print("Could not start. Close any other copy of the coach or try: python server.py --port 8766 --open")
+        server = bind_server(create_server, port, allow_fallback=args.port is None)
+    except OSError as error:
+        if is_address_in_use(error):
+            print(f"The requested coach port is occupied. Try: python server.py --port {min(port + 1, 65535)} --open", flush=True)
+        else:
+            print(f"Could not start the coach: {error}\nCheck that the extracted app folder is writable and keep this error message for troubleshooting.", flush=True)
         return 1
     url = f"http://127.0.0.1:{server.server_port}"
-    print(f"Dota Ascent is running at {url}\nKeep this window open. Press Ctrl+C to stop.\nNo Steam password or paid API key is needed.", flush=True)
+    print(f"Dota Ascent is running at {url}\nKeep this window open. Closing it stops the coach. Press Ctrl+C to stop.\nTo reopen later, double-click run.bat.\nNo Steam password or paid API key is needed.", flush=True)
     if args.open:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     try:

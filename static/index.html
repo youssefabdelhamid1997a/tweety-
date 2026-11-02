@@ -41,6 +41,12 @@
     </section>
     <div id="status" class="status" role="status" aria-live="polite" hidden></div>
     <div id="error" class="error" role="alert" hidden></div>
+    <section id="history-status" class="history-status" aria-labelledby="history-status-title" hidden>
+      <h2 id="history-status-title">No ranked matches returned</h2>
+      <p id="history-status-description"></p>
+      <p id="history-status-next"></p>
+      <div class="history-actions"><button id="retry-history" class="secondary" type="button">Check OpenDota again</button><a id="history-profile" class="secondary" href="https://www.opendota.com/players/314758455" target="_blank" rel="noopener noreferrer">View my OpenDota history ↗</a><button id="review-by-id" class="text-button" type="button">Review a match by ID →</button></div>
+    </section>
     <section id="empty-state" class="empty-state"><span class="empty-icon">◈</span><div><h2>A coach with receipts.</h2><p>Load your ranked matches for evidence, replay review prompts, and a training plan.<br>Missing replay data stays missing. Sample matches are always labeled.</p></div><span class="empty-decoration">01 — 20</span></section>
     <div id="dashboard" hidden>
       <div class="section-header report-header"><div><div class="eyebrow" id="report-subtitle">YOUR RANKED SNAPSHOT</div><h2 id="report-title"></h2><p id="report-meta" class="subtle"></p></div><button id="export-button" class="secondary" type="button">↓ Export report</button></div>

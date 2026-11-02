@@ -1,5 +1,14 @@
 # Verification record — November 2, 2026
 
+## Version 1.0.1 update — November 3, 2026
+
+- **55 automated tests passed**, with none skipped. Includes explicit history refresh replacing a cached empty response, using only eligible ranked matches from the recent endpoint, honest handling of unavailable or unranked recent history, safe running-instance detection, Windows address-in-use simulation, bounded port fallback, and propagation of other startup errors.
+- The full Chromium desktop/mobile flow passed. New checks verify that Analyze does not move the page, a visible explanation replaces the zero-filled dashboard when history is empty, and Check OpenDota again displays a newly available match. Existing import/export, replay-room, AI rendering, and checklist checks still pass.
+- Fresh public API checks for account 314758455 again returned zero rows from ranked, recent, and unfiltered history. No personal match-loading success is claimed. The fix addresses stale local results and confusing UI behavior; it cannot manufacture missing public API data.
+- Native Windows execution remains untested. The launcher and socket behavior are covered by portable tests, including simulated Winsock error 10048.
+
+The earlier 1.0.0 verification record follows.
+
 ## Passed in the cloud instance
 
 - **36 automated tests**: `python3 -m unittest discover -s tests -v` on Python 3.12.14. No skipped or expected-failure tests.

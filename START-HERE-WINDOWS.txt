@@ -15,7 +15,9 @@ DOTA ASCENT - YOUR PERSONAL DOTA 2 COACH
    Your Dota friend ID (314758455) is already filled in.
    Choose the role you played, then click Analyze my matches.
    If history is empty, sign in to OpenDota and play new ranked games.
-   History is cached for 5 minutes. Older hidden games may stay missing.
+   Analyze always checks fresh history. Older hidden games may stay missing.
+   The button no longer jumps down the page: results appear below it.
+   If history is empty, use Check OpenDota again or review a match by ID.
 
 5. Pick ONE focus for your next five games. Use Match review to examine
    parsed events and your in-game replay to understand decisions.
@@ -23,6 +25,8 @@ DOTA ASCENT - YOUR PERSONAL DOTA 2 COACH
 
 TO STOP: Close the console window or press Ctrl+C in it.
 TO START AGAIN: Double-click run.bat.
+If it is already running, this reopens its browser. If its usual port is
+busy, it can use another port; the console prints the correct address.
 
 OPTIONAL AI CHAT:
 The normal dashboard works without it. For a local AI conversation:

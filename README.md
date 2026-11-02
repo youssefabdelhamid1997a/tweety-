@@ -4,6 +4,8 @@ A local dashboard for **ranked Dota 2**, prepared for friend ID **314758455** (S
 
 It connects to OpenDota, looks for patterns worth reviewing, and turns them into a five-game practice plan. Optional **local AI chat with Ollama** can discuss the report. The dashboard works without AI chat, a paid API key, a Steam password, or any Python package installations.
 
+Version **1.0.1** removes the automatic page jump after Analyze, checks fresh match history on every click, and explains empty results beside the button with retry and direct match-ID review options. If ranked history is empty but OpenDota's recent endpoint has eligible ranked games, those games are used with an explicit coverage note. Reopening an already running coach opens its browser again; an unrelated service on the default port causes the launcher to choose another free local port.
+
 ## Run on Windows — no programming needed
 
 1. **Install Python** from [python.org](https://www.python.org/downloads/windows/). Use Python **3.10 or newer** (tested with 3.12). Tick **Add Python to PATH** in the installer.
@@ -12,7 +14,7 @@ It connects to OpenDota, looks for patterns worth reviewing, and turns them into
 4. In Dota 2, enable **Settings → Social → Expose Public Match Data**. Your account is prefilled in the dashboard. Select the role you played, then click **Analyze my matches**. Public API requests may take about a minute. Choose **Explore sample dashboard** if you just want to see how it works; those matches are invented and clearly labeled.
 5. Start with **one** suggested exercise for your next five ranked games. Review the evidence matches and your in-game replays rather than treating a statistic as proof of a mistake.
 
-If the browser does not open, enter `http://127.0.0.1:8765` in its address bar. Close the console or press **Ctrl+C** there to stop the app. Double-click `run.bat` to start it again.
+If the browser does not open, enter the address printed in the console (normally `http://127.0.0.1:8765`). Close the console or press **Ctrl+C** there to stop the app. Double-click `run.bat` to start it again. Clicking Analyze keeps you in place and shows a completion message; the results appear below. An empty response produces a clear explanation instead of a zero-filled dashboard.
 
 ### Optional: turn on the AI conversation
 
@@ -73,9 +75,9 @@ Missing data is shown as `—` and excluded from the corresponding average or ch
 | Rate limit reached | Wait at least a minute before trying again. Don't repeatedly refresh multiple matches. Free API limits can change. |
 | Replay fields unavailable | Request parsing for a recent match and refresh later. Old replays may have expired permanently. |
 | Nothing happens when asking AI | Install/start Ollama and pull `llama3.2:3b`. The normal dashboard does not need it. Try again after the model has loaded. |
-| Another copy is running / port busy | Close the first coach window. Alternatively, open Command Prompt in the extracted folder and run `py -3 server.py --port 8766 --open`. |
+| Another copy is running / port busy | The launcher reopens a verified running coach, or picks another free local port if an unrelated service occupies 8765. Keep the original coach console open. An explicit `--port` never silently changes your requested port. |
 | Imported match rejected | Use full OpenDota match JSON for a ranked game over 10 minutes. Your numeric account ID must be visible in its `players` array. |
-| Older numbers remain visible | Profile and match-list results are cached for 5 minutes; match details for 24 hours. **Refresh match** bypasses its detail cache. Reanalyze to rebuild the overview. |
+| Older numbers remain visible | **Analyze my matches** and **Check OpenDota again** bypass this app's profile/history cache. OpenDota may still need time to update its public API. Match details stay cached for 24 hours; **Refresh match** bypasses the selected detail cache. Reanalyze to rebuild the overview. |
 
 The local cache is `.local/opendota.sqlite3`. To clear it, stop the app and delete the `.local` folder. Checklist state is in your browser's local storage. The app is intentionally bound to `127.0.0.1`; do not expose it as a public website.
 
@@ -90,7 +92,7 @@ python -m unittest discover -s tests -v
 
 On Windows use `py -3` instead of `python` if needed. Tests use deterministic fixtures and mocked upstream responses; they do not require Internet or an AI model. They exercise coaching rules, HTTP integration, filtering, account ownership, caching, HTTPS requests, limits, and AI adapter behavior. A separate optional developer check, `python -m tests.browser_smoke`, needs Playwright and Chromium; it is not required for users. That browser runner defaults to `/usr/bin/chromium` in the cloud test environment.
 
-All **36 automated tests** and the desktop/mobile browser checks passed. See `VALIDATION.md` for the exact live-data checks and what remains unverified. A separate public reference match also verified real replay-field compatibility; it was not treated as your match history.
+All **55 automated tests** and the desktop/mobile browser checks passed for version 1.0.1, including no page jump, fresh-history retry, ranked recent-match fallback, and safe relaunch behavior. See `VALIDATION.md` for the exact live-data checks and what remains unverified. A separate public reference match also verified real replay-field compatibility; it was not treated as your match history.
 
 **Validation boundary:** the app and browser flows were tested on Linux/Python 3.12, including desktop and mobile layouts. Windows batch execution and actual Ollama inference require testing on the user's Windows PC. Live OpenDota access was initially blocked by the cloud network allowlist; it became available after the configuration update. A live check identified **Tweety, Archon II**, but ranked, recent, and unfiltered match-history requests all returned **zero matches**. This verifies connectivity and the empty-history handling; it does not validate your personal gameplay or live replay analysis. Enable public match data, sign in to OpenDota, and let new matches become available. Private history is only one possible cause of an empty result; it has not been proven. The required `api.opendota.com` network rule and startup instructions are saved in the cloud configuration draft; draft saving is separate from publishing the final prepared filesystem. Ordinary Windows use relies on your own Internet connection.
 

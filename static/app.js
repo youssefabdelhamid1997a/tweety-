@@ -36,9 +36,10 @@ async function task(text, work) {
   if (isBusy) return;
   message("", true);
   setBusy(true, text);
-  try { await work(); }
+  let notice;
+  try { notice = await work(); }
   catch (error) { message(error.message || "Could not connect to the local app. Keep the Python window open and try again.", true); }
-  finally { setBusy(false); }
+  finally { setBusy(false); if (typeof notice === "string") message(notice); }
 }
 
 function formData() {
@@ -72,7 +73,18 @@ function renderReport(data) {
   review = null;
   $("#review-output").hidden = true;
   $("#empty-state").hidden = true;
-  $("#dashboard").hidden = false;
+  $("#dashboard").hidden = data.source !== "demo" && data.summary.matches === 0;
+  const empty = data.source === "live" && data.summary.matches === 0;
+  $("#history-status").hidden = !empty;
+  if (empty) {
+    const recent = data.history?.recent_count;
+    $("#history-status-title").textContent = `No eligible ranked matches returned for ${data.name}`;
+    $("#history-status-description").textContent = recent > 0
+      ? `OpenDota returned ${recent} recent games, but none were eligible for ranked coaching (ranked, at least 10 minutes, no abandon by your account). Your report has not been replaced with sample matches.`
+      : `The public OpenDota API did not return eligible ranked history for friend ID ${data.account_id}. This is an empty data response, not a hidden analysis result. Signing into the OpenDota website does not guarantee its public API has updated yet.`;
+    $("#history-status-next").textContent = "Open your OpenDota history and verify the account and ranked matches. Check again after its data updates, or copy a ranked match ID into the replay room below to review that game directly.";
+    $("#history-profile").href = `https://www.opendota.com/players/${data.account_id}`;
+  }
   const sample = data.source === "demo";
   const badge = $("#source-badge");
   badge.className = `badge ${sample ? "sample" : "live"}`;
@@ -148,13 +160,21 @@ function loadSpecific(id, refresh = false, account, role) {
   });
 }
 
-$("#connect-form").addEventListener("submit", (event) => {
-  event.preventDefault();
-  task("Reading ranked history and up to 5 detailed matches. This may take a minute. Your previous report stays visible until the new one succeeds…", async () => {
-    renderReport(await request("/api/analyze", formData()));
-    $("#dashboard").scrollIntoView({behavior: "smooth", block: "start"});
+function analyzeMatches() {
+  return task("Checking fresh OpenDota history and up to 5 detailed matches. This may take a minute…", async () => {
+    const data = await request("/api/analyze", {...formData(), refresh: true});
+    renderReport(data);
+    return data.summary.matches
+      ? `Loaded ${data.summary.matches} ranked matches. Your dashboard and coaching priorities are below.`
+      : "OpenDota returned no eligible ranked matches. See the explanation and retry options directly below.";
   });
+}
+$("#connect-form").addEventListener("submit", (event) => { event.preventDefault(); analyzeMatches(); });
+$("#retry-history").addEventListener("click", () => {
+  if (report && report.source === "live") { $("#account").value = String(report.account_id); $("#role").value = report.role; }
+  analyzeMatches();
 });
+$("#review-by-id").addEventListener("click", () => { $("#match-review").scrollIntoView({block: "start", behavior: "smooth"}); $("#match-id").focus({preventScroll: true}); });
 $("#demo-button").addEventListener("click", () => task("Loading clearly labeled synthetic sample matches…", async () => {
   const role = $("#role").value === "auto" ? "carry" : $("#role").value;
   renderReport(await request(`/api/demo?role=${encodeURIComponent(role)}`));

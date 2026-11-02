@@ -17,12 +17,33 @@ class CoachService:
         limit = data.get("limit", 20)
         if type(limit) is not int or limit not in (10, 20, 30):
             raise InputError("Choose 10, 20, or 30 recent ranked matches.")
-        rows = self.client.matches(account, limit)
+        refresh = data.get("refresh", False)
+        if type(refresh) is not bool:
+            raise InputError("Refresh must be true or false.")
+        rows = self.client.matches(account, limit, refresh=refresh)
         if not isinstance(rows, list) or any(not isinstance(r, dict) for r in rows):
             raise APIError("OpenDota returned an unexpected match list.")
         warnings, details = [], {}
+        history = {"status": "loaded", "recent_count": None, "used_recent_fallback": False}
+        if not rows:
+            try:
+                recent = self.client.recent_matches(account, refresh=refresh)
+                if not isinstance(recent, list) or any(not isinstance(r, dict) for r in recent):
+                    raise APIError("OpenDota returned an unexpected recent-match list.")
+                history["recent_count"] = len(recent)
+                rows = [r for r in recent if is_ranked(r)][:limit]
+                if rows:
+                    history["used_recent_fallback"] = True
+                    warnings.append(f"The ranked-history endpoint was empty, so this report uses {len(rows)} eligible ranked matches from OpenDota's recent-match endpoint. Its recent sample may be shorter than requested.")
+                elif recent:
+                    history["status"] = "no_eligible_ranked"
+                else:
+                    history["status"] = "no_public_history"
+            except APIError as exc:
+                history["status"] = "recent_unavailable"
+                warnings.append(f"Recent-history cross-check unavailable: {exc}")
         try:
-            profile = self.client.profile(account)
+            profile = self.client.profile(account, refresh=refresh)
             if not isinstance(profile, dict):
                 raise APIError("OpenDota returned an unexpected profile.")
         except APIError as exc:
@@ -43,8 +64,12 @@ class CoachService:
             except APIError as exc:
                 warnings.append(f"Detailed replay fetch stopped: {exc} Summary analysis is still available.")
                 break
-        warnings.append("To conserve the public API quota, only the 5 newest eligible matches receive detailed replay checks. Profile/history cache: 5 minutes; match details: 24 hours. Use Match review → Refresh to recheck a newly parsed replay.")
-        return build_report(account, profile, rows, details, HEROES, role, warnings=warnings)
+        warnings.append("To conserve the public API quota, only the 5 newest eligible matches receive detailed replay checks. Analyze my matches checks fresh history; match details remain cached for 24 hours. Use Match review → Refresh to recheck a newly parsed replay.")
+        report = build_report(account, profile, rows, details, HEROES, role, warnings=warnings)
+        if not report["summary"]["matches"] and history["status"] == "loaded":
+            history["status"] = "no_eligible_ranked"
+        report["history"] = history
+        return report
 
     def review(self, data, imported=None):
         account = account_id(data.get("account"))
