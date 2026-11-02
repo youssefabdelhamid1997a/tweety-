@@ -1,0 +1,40 @@
+DOTA ASCENT - YOUR PERSONAL DOTA 2 COACH
+
+1. Install Python 3.10 or newer from:
+   https://www.python.org/downloads/windows/
+   Tick "Add Python to PATH" during installation.
+
+2. Right-click the downloaded ZIP -> Extract All.
+   Open the extracted folder containing run.bat.
+
+3. Double-click run.bat. Keep its console window open.
+   Your browser should open automatically.
+   If it does not, type http://127.0.0.1:8765 in your browser.
+
+4. In Dota 2, enable Settings -> Social -> Expose Public Match Data.
+   Your Dota friend ID (314758455) is already filled in.
+   Choose the role you played, then click Analyze my matches.
+   If history is empty, sign in to OpenDota and play new ranked games.
+   History is cached for 5 minutes. Older hidden games may stay missing.
+
+5. Pick ONE focus for your next five games. Use Match review to examine
+   parsed events and your in-game replay to understand decisions.
+   Sample dashboard data is invented and clearly labeled.
+
+TO STOP: Close the console window or press Ctrl+C in it.
+TO START AGAIN: Double-click run.bat.
+
+OPTIONAL AI CHAT:
+The normal dashboard works without it. For a local AI conversation:
+- Install and start Ollama: https://ollama.com/download/windows
+- Open Command Prompt and run: ollama pull llama3.2:3b
+- Load a report, scroll to Ask your coach, and ask a question.
+The model is a few GB and needs free disk space and RAM.
+AI can be wrong; check its claims against your evidence and replay.
+
+No paid API key, Steam password, or programming commands are required
+for the dashboard. No Python package installation is required.
+
+Read README.md for troubleshooting, data limitations and developer tests.
+This app uses OpenDota parsed JSON, not raw .dem replay files.
+It cannot promise Divine or automatically prove why a game was lost.

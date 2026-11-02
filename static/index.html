@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101722">
+  <title>Dota Ascent · Your personal coach</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <aside class="sidebar">
+    <a href="#overview" class="brand" aria-label="Dota Ascent home"><span class="brand-icon">↗</span><span>DOTA<span class="brand-sub">ASCENT</span></span></a>
+    <div class="nav-label">YOUR PLAYBOOK</div>
+    <nav aria-label="Main navigation">
+      <a class="active" href="#overview"><span>◈</span> Overview</a>
+      <a href="#match-review"><span>▤</span> Match review</a>
+      <a href="#training"><span>◎</span> Training plan</a>
+      <a href="#ai-coach"><span>✧</span> Ask your coach</a>
+      <a href="#method"><span>ⓘ</span> How it works</a>
+    </nav>
+    <div class="sidebar-bottom"><div class="local-dot">RUNS ON YOUR COMPUTER</div><p>Your Steam password stays yours. Public match data only.</p><span class="powered">Data by OpenDota ↗</span></div>
+  </aside>
+  <main id="main">
+    <header class="topbar"><span>PERSONAL COACH <span class="slash">/</span> <span class="muted">RANKED DOTA 2</span></span><span id="source-badge" class="badge neutral">Account not loaded</span></header>
+    <section id="overview" class="intro">
+      <div><div class="eyebrow"><span class="small-line"></span> SMALL DECISIONS. BETTER GAMES.</div><h1>Your next rank starts<br>with your next decision<span class="accent">.</span></h1><p>A clearer picture of your game. A focused plan to improve.</p></div>
+      <div class="goal-mark"><span class="rank-glyph">✧</span><div>THE LONG GAME<strong>Archon <span>→</span> Divine</strong><small>A goal to work toward, not a promised result.</small></div></div>
+    </section>
+    <section class="connect-panel" aria-labelledby="connect-title">
+      <div class="panel-heading"><div><span class="step-dot">01</span><h2 id="connect-title">Bring your matches into focus</h2></div><span class="subtle">No sign-in. No paid API key.</span></div>
+      <form id="connect-form">
+        <div class="field account-field"><label for="account">Dota friend ID or Steam profile URL</label><input id="account" name="account" value="314758455" placeholder="e.g. 314758455" required autocomplete="off" spellcheck="false"><small>Your account is prefilled. Use a numeric friend ID or Steam /profiles/ link.</small></div>
+        <div class="field"><label for="role">Role for this review</label><select id="role" name="role"><option value="auto">Infer cautiously</option><option value="carry">1 · Carry</option><option value="mid">2 · Mid</option><option value="offlane">3 · Offlane</option><option value="support">4 · Support</option><option value="hard_support">5 · Hard support</option></select><small>Choose a role if you played it throughout.</small></div>
+        <div class="field count-field"><label for="limit">Ranked matches</label><select id="limit" name="limit"><option value="10">Latest 10</option><option value="20" selected>Latest 20</option><option value="30">Latest 30</option></select><small>5 get deeper replay checks.</small></div>
+        <button id="analyze-button" class="primary" type="submit">Analyze my matches <span>↗</span></button>
+      </form>
+      <div class="connect-foot"><span>In Dota: Settings → Social → <strong>Expose Public Match Data</strong></span><button id="demo-button" class="text-button" type="button">Explore sample dashboard →</button></div>
+    </section>
+    <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+    <div id="error" class="error" role="alert" hidden></div>
+    <section id="empty-state" class="empty-state"><span class="empty-icon">◈</span><div><h2>A coach with receipts.</h2><p>Load your ranked matches for evidence, replay review prompts, and a training plan.<br>Missing replay data stays missing. Sample matches are always labeled.</p></div><span class="empty-decoration">01 — 20</span></section>
+    <div id="dashboard" hidden>
+      <div class="section-header report-header"><div><div class="eyebrow" id="report-subtitle">YOUR RANKED SNAPSHOT</div><h2 id="report-title"></h2><p id="report-meta" class="subtle"></p></div><button id="export-button" class="secondary" type="button">↓ Export report</button></div>
+      <details id="data-notes" class="data-notes"><summary id="notes-summary">Data coverage & limitations</summary><ul id="warnings"></ul></details>
+      <section id="metrics" class="metrics" aria-label="Match summary"></section>
+      <section aria-labelledby="focus-title"><div class="section-header"><div><div class="eyebrow">LESS NOISE. MORE PROGRESS.</div><h2 id="focus-title">Your next focus</h2></div><span class="subtle">Review signals, not a verdict</span></div><div id="priorities" class="priorities"></div></section>
+      <section class="history-section" aria-labelledby="history-title"><div class="section-header"><div><div class="eyebrow">THE BIGGER PICTURE</div><h2 id="history-title">Your recent games</h2></div><label class="filter-label" for="result-filter">Show <select id="result-filter"><option value="all">All results</option><option value="wins">Wins</option><option value="losses">Losses</option></select></label></div>
+        <div class="chart-panel"><div class="chart-header"><h3>Gold per minute</h3><span class="subtle">Oldest → newest · descriptive, not a rank benchmark</span></div><div id="trend-chart"></div></div>
+        <div class="table-wrap"><table><caption class="sr-only">Recent eligible ranked matches. Select Review to inspect an individual game.</caption><thead><tr><th scope="col">Hero / date</th><th scope="col">Result</th><th scope="col">K / D / A</th><th scope="col">GPM</th><th scope="col">LH @ 10</th><th scope="col">Replay</th><th scope="col">Review</th></tr></thead><tbody id="matches"></tbody></table></div><p class="table-note" id="table-note"></p>
+      </section>
+    </div>
+    <section id="match-review" class="review-section" aria-labelledby="review-title"><div class="section-header"><div><div class="eyebrow">GO ONE GAME DEEPER</div><h2 id="review-title">The replay room</h2></div><span class="pill">Public ranked matches</span></div>
+      <div class="review-box"><div><h3>Review a specific match</h3><p>Uses the account and role above. OpenDota's parsed events add last hits, economy, and item timings. This app does not read raw .dem replay files.</p></div><form id="review-form"><label class="sr-only" for="match-id">Match ID</label><input id="match-id" placeholder="Enter a match ID" inputmode="numeric" required><button class="secondary" type="submit">Review match →</button></form><div class="import-line"><span>Already have a full OpenDota match JSON?</span><label class="file-button" for="import-file">Import JSON</label><input id="import-file" type="file" accept=".json,application/json"><span class="subtle">Up to 8 MB · analyzed locally</span></div></div>
+      <article id="review-output" class="review-output" hidden></article>
+    </section>
+    <section id="training" aria-labelledby="training-title"><div class="section-header"><div><div class="eyebrow">ONE HABIT AT A TIME</div><h2 id="training-title">Your climb, made practical</h2></div><span class="subtle">Consistency before volume</span></div><div class="roadmap"><article><span class="stage">01 <span>FOUNDATIONS</span></span><h3>Archon → Legend</h3><p>Build a small hero pool, stabilize your lane, and learn from the first three deaths.</p><span class="milestone">Check: 5 deliberate games on one role</span></article><article><span class="stage">02 <span>MAP INTENT</span></span><h3>Legend → Ancient</h3><p>Farm toward the next objective. Connect vision, item timings, and wave pressure.</p><span class="milestone">Check: explain your next objective</span></article><article><span class="stage">03 <span>DECISION QUALITY</span></span><h3>Ancient → Divine</h3><p>Track threats and buybacks. Review decisions with context, not only their outcomes.</p><span class="milestone">Check: one precise adjustment per replay</span></article></div>
+      <div class="practice-panel"><div><h3>Your next 5 games</h3><p>Choose one focus. These checkboxes are saved in this browser, separately for each account and sample mode.</p></div><div id="practice-list"><p class="subtle">Load a report to create your personal practice checklist.</p></div></div>
+    </section>
+    <section id="ai-coach" aria-labelledby="ai-title"><div class="section-header"><div><div class="eyebrow">OPTIONAL · LOCAL AI</div><h2 id="ai-title">Talk through your next move</h2></div><span class="pill">Powered by Ollama</span></div><div class="ai-panel"><p>Ask about the loaded report. Requires Ollama running on this computer with <code>llama3.2:3b</code> installed. The dashboard and replay review work without it.</p><form id="ai-form"><label for="ai-question">Your coaching question</label><div class="ai-input"><textarea id="ai-question" maxlength="1000" rows="2" required placeholder="What should I focus on in my next five games?"></textarea><button class="primary" type="submit">Ask local AI ↗</button></div></form><p class="ai-caveat">AI responses can be wrong. Check claims against the evidence and your in-game replay. Only a small report summary and your question go to your local model.</p><div id="ai-answer" class="ai-answer" role="status" aria-live="polite" hidden></div></div></section>
+    <section id="method" class="method" aria-labelledby="method-title"><span class="method-icon">ⓘ</span><div><h2 id="method-title">Useful coaching starts with honest evidence.</h2><p>The dashboard uses transparent coaching rules, not a trained model or a comparison with Divine players. Optional local AI chat interprets the report but is not a source of new match facts. Neither can watch your camera, understand every fight, or prove why you lost. Targets are starting exercises and depend on your role, hero, matchup, and patch. No rank gain is guaranteed.</p><p>Ranked only. Remakes under 10 minutes and matches this account abandoned are excluded. Safe lane does not automatically mean carry. A manual role is your assumption for all matches in that review. The in-game replay remains the source of context.</p><p>Data goes from OpenDota to a local Python server. No Steam login, uploads to a cloud AI service, telemetry, or CDN assets. Reports and cache may contain public account information; share exports deliberately.</p></div></section>
+    <footer><a href="#overview" class="footer-brand">DOTA ASCENT <span>↗</span></a><span>Built for deliberate practice. Powered by public OpenDota data.</span><a href="https://www.opendota.com/players/314758455" target="_blank" rel="noopener noreferrer">Your OpenDota profile ↗</a></footer>
+  </main>
+</body>
+</html>
