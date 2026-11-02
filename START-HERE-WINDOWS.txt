@@ -36,6 +36,20 @@ The normal dashboard works without it. For a local AI conversation:
 The model is a few GB and needs free disk space and RAM.
 AI can be wrong; check its claims against your evidence and replay.
 
+OPTIONAL LIVE SCREEN COACH:
+- Start Ollama, then double-click setup-live.bat to download gemma3:4b.
+- Keep Ollama open. Start the coach with run.bat in Chrome or Edge.
+- Open Live screen coach. Enter your current hero and role.
+- Click Choose Dota window, select Dota, and verify the preview.
+- Click Analyze one snapshot, or explicitly start periodic checks.
+- Stop sharing ends capture. No frame is sent just from choosing a source.
+- Local spoken advice is optional. Capture and inference can be delayed.
+This uses selected snapshots, not continuous game understanding or hidden
+enemy information. It needs no OpenDota key or public match history.
+Use borderless window mode if the preview is black; keep the coach tab open.
+The app saves no screen recordings or frames. An already-started model
+analysis may finish locally after Stop, but its reply will be ignored.
+
 No paid API key, Steam password, or programming commands are required
 for the dashboard. No Python package installation is required.
 

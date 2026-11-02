@@ -1,5 +1,14 @@
 # Verification record — November 2, 2026
 
+## Version 1.1.0 update — November 3, 2026
+
+- **103 automated tests passed**, including 16 vision-adapter tests and four live-route/concurrency checks. These cover valid JPEG framing and dimensions, input/output size bounds, fresh timestamps, stale replies, fixed local model routing, no credentials/image echo, schema validation, model errors, and avoiding overlapping local AI calls while keeping history requests available.
+- The existing dashboard Chromium suite passed. A separate live-control browser suite uses synthetic canvas streams and controlled model replies to test explicit sharing, no model request from sharing alone, JPEG/crop compatibility, manual and periodic checks, cancellation while in flight, late-reply suppression, permission denial, black frames, browser-ended sharing, safe text rendering, and a narrow-screen layout.
+- Live frames and advice are not written to disk, reports, caches, or browser storage by this feature. No real desktop, game window, API key, or vision model was used in these checks.
+- **Unverified on the user's PC:** actual Windows screen picker and game capture, background fullscreen capture, installed local speech voices, Gemma3 output quality, RTX 5060 inference performance, available VRAM/system RAM, and Dota's frame-rate impact. A synthetic UI/transport pass does not establish reliable tactical advice. The release describes periodic snapshot review rather than instant or complete live understanding.
+
+Earlier version verification records follow.
+
 ## Version 1.0.2 update — November 3, 2026
 
 - **83 automated tests passed** with no skipped tests. New tests cover environment/local-file precedence, private atomic saves, matching hidden input, refusal to echo a key, local removal, header authentication, public/key-specific cache separation, redacted errors, health metadata containing only credential presence, redirect rejection, and ignoring an older running app after an update.

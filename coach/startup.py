@@ -6,7 +6,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, ProxyHandler, build_opener
 
 APP_ID = "dota-ascent"
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.1.0"
 DEFAULT_PORT = 8765
 FALLBACK_PORTS = 10
 

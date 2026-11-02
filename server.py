@@ -17,6 +17,7 @@ from coach.config import ConfigError
 from coach.demo import demo_report
 from coach.service import CoachService
 from coach.startup import APP_ID, APP_VERSION, DEFAULT_PORT, FALLBACK_PORTS, bind_server, is_address_in_use, is_coach_running
+from coach.vision import vision_reply
 
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 10_000_000
@@ -24,6 +25,7 @@ MAX_BODY = 10_000_000
 
 def make_handler(service):
     busy = threading.Lock()
+    model_busy = threading.Lock()
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "DotaAscent/1.0"
@@ -45,7 +47,8 @@ def make_handler(service):
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Referrer-Policy", "no-referrer")
-            self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+            self.send_header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+            self.send_header("Permissions-Policy", "display-capture=(self), camera=(), microphone=()")
             self.end_headers()
             try:
                 self.wfile.write(body)
@@ -56,7 +59,8 @@ def make_handler(service):
             if not self.safe_host():
                 return self.send({"error": "This is a local-only application. Use localhost or 127.0.0.1."}, 403)
             url = urlparse(self.path)
-            files = {"/": ("index.html", "text/html"), "/app.js": ("app.js", "application/javascript"), "/style.css": ("style.css", "text/css")}
+            files = {"/": ("index.html", "text/html"), "/app.js": ("app.js", "application/javascript"), "/style.css": ("style.css", "text/css"),
+                     "/live.js": ("live.js", "application/javascript"), "/live.css": ("live.css", "text/css")}
             if url.path in files:
                 name, mime = files[url.path]
                 return self.send((ROOT / "static" / name).read_bytes(), content_type=mime + "; charset=utf-8")
@@ -88,10 +92,11 @@ def make_handler(service):
                     raise ValueError()
             except (ValueError, UnicodeDecodeError):
                 return self.send({"error": "The request is not a valid JSON object."}, 400)
-            if not busy.acquire(blocking=False):
-                return self.send({"error": "Another analysis is running. Please wait for it to finish."}, 429)
+            path = urlparse(self.path).path
+            active_lock = model_busy if path in {"/api/ask", "/api/live/analyze"} else busy
+            if not active_lock.acquire(blocking=False):
+                return self.send({"error": "Another local AI request is running. Wait for it to finish before analyzing another frame or asking the coach." if active_lock is model_busy else "Another analysis is running. Please wait for it to finish."}, 429)
             try:
-                path = urlparse(self.path).path
                 if path == "/api/analyze":
                     return self.send(service.analyze(data))
                 if path == "/api/match":
@@ -100,6 +105,8 @@ def make_handler(service):
                     return self.send(service.review(data, imported=data.get("match", {})))
                 if path == "/api/ask":
                     return self.send(coach_reply(data.get("report"), data.get("question")))
+                if path == "/api/live/analyze":
+                    return self.send(vision_reply(data))
                 if path == "/api/parse":
                     result = service.client.parse(match_id(data.get("match_id")))
                     job = result.get("job", {}).get("jobId") if isinstance(result, dict) and isinstance(result.get("job"), dict) else None
@@ -113,7 +120,7 @@ def make_handler(service):
                 # Never expose local paths, traces, or potentially personal upstream data in HTTP responses.
                 return self.send({"error": "An unexpected error occurred. Restart the app and retry. Your files have not been changed."}, 500)
             finally:
-                busy.release()
+                active_lock.release()
 
     return Handler
 

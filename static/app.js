@@ -18,7 +18,7 @@ function message(text, error = false) {
 
 function setBusy(value, text = "") {
   isBusy = value;
-  document.querySelectorAll("button, #import-file").forEach((el) => { el.disabled = value; });
+  document.querySelectorAll("button:not([data-live-control]), #import-file").forEach((el) => { el.disabled = value; });
   $("#connect-form").setAttribute("aria-busy", String(value));
   $("#status").classList.toggle("loading", value);
   message(text);

@@ -4,7 +4,7 @@ A local dashboard for **ranked Dota 2**, prepared for friend ID **314758455** (S
 
 It connects to OpenDota, looks for patterns worth reviewing, and turns them into a five-game practice plan. Optional **local AI chat with Ollama** can discuss the report. The dashboard works without AI chat, a paid API key, a Steam password, or any Python package installations.
 
-Version **1.0.2** adds optional OpenDota API-key support through a hidden local setup prompt. It retains fresh-history checking, clear empty-result explanations, ranked recent-match fallback, and safe reopening without an automatic page jump.
+Version **1.1.0** adds an optional live screen coach: choose a Dota window, then explicitly request one snapshot review or periodic checks through local Ollama vision. Sharing starts only through your browser's chooser and can be stopped at any time. The OpenDota dashboard, private key setup, and report chat remain available.
 
 ## Run on Windows — no programming needed
 
@@ -44,6 +44,26 @@ The numerical dashboard uses explainable rules. Actual generative AI chat is a s
 3. Wait for the model download (roughly a few GB; allow several GB of free disk and RAM). Then load a report in Dota Ascent, scroll to **Ask your coach**, and ask a question such as “What should I focus on over my next five games?”
 
 The model runs on your computer at port 11434. Initial CPU answers can be slow; the app allows up to two minutes. A small summary of the loaded report and your question are sent to **local Ollama**, not a cloud AI company. Sample reports remain labeled in the chat. AI text can still be wrong: verify it against the report and replay. The app never silently substitutes a rule-based answer if Ollama is unavailable.
+
+### Optional: screen coaching while you play
+
+This mode works independently of OpenDota match history, your API key, and the report chat. It uses **selected snapshots**, not a continuous video interpretation or an exact danger detector. It does not read game memory, hidden enemies, or a game-state feed. Suggestions can be delayed or wrong.
+
+1. Open **Ollama** from the Start menu. Run **`setup-live.bat`** in the coach folder, or paste `ollama pull gemma3:4b` into a separate PowerShell window. This downloads a vision model of several GB. The report-chat model `llama3.2:3b` is text-only; live mode uses `gemma3:4b` instead.
+2. Close older coach consoles, then double-click **`run.bat`**. In desktop **Chrome or Edge**, open the coach's local address and choose **Live screen coach** in the navigation.
+3. Enter the hero and role you are currently playing. The minimap crop defaults to **Off**; select the correct bottom corner only if your minimap appears there.
+4. Click **Choose Dota window** and select the game in the browser's sharing dialog. Verify the preview. Prefer a Dota window in borderless mode; an exclusive fullscreen or minimized window may produce black or paused captures. Choosing a source alone makes **no model request**.
+5. Click **Analyze one snapshot** for one review. After checking that it works, click **Start periodic checks** if you want repeated reviews. A new request starts only after the previous one finishes and a pause of at least 30 seconds. Browser background timing can add delay. You can return to Dota while keeping the coach tab open.
+6. Optionally tick **Read fresh advice aloud** if an installed local voice is available. It uses local voices only and only reads game-visible advice while its frame remains within the 15-second speech freshness window. You do not need to watch the browser continuously; this version does not draw an overlay inside Dota.
+7. Click **Stop sharing**, use the browser's own stop-sharing control, or close/reload the coach tab to end capture. The app clears its preview and live advice, cancels scheduled checks, and ignores late replies. An analysis already sent to Ollama may finish locally; Stop does not promise cancellation of model work already underway.
+
+Each review sends a reduced JPEG and optional corner crop to the local Python server and **local Ollama at 127.0.0.1:11434**. No microphone or screen audio is requested. This app does not save recordings, frames, or live advice to files, caches, reports, browser storage, or a cloud model. The selected image is the information you choose to share; if you choose a whole monitor, its other visible contents are also in that image.
+
+The model separates **Visible observation**, **Review suggestion**, and **Uncertainty**. If it cannot identify the player's hero or relevant game context, it should return no positioning advice. Frames over 15 seconds old are rejected before inference, replies older than 90 seconds are discarded, and old displayed advice expires. These checks do not make a model's judgment reliable or establish missing context between snapshots.
+
+An RTX 5060 was reported for the user's PC; its exact VRAM, system RAM, and Dota/Ollama performance have not been verified. Start with one manual snapshot and the default 30-second pause. Close unused AI models or reduce load if needed; choose a longer interval for slower checks. `ollama ps` in another PowerShell window shows whether Ollama is using the GPU after a request. No actual model-speed, gameplay-accuracy, or native Windows capture claim is made from the cloud tests.
+
+If you downloaded this update into a new folder, the API key saved in an older folder remains there. You may rerun `set-api-key.bat` in the new folder if you want paid OpenDota access too; live screen coaching itself does not require that key.
 
 ## What the coach can show
 
@@ -106,7 +126,7 @@ python -m unittest discover -s tests -v
 
 On Windows use `py -3` instead of `python` if needed. Tests use deterministic fixtures and mocked upstream responses; they do not require Internet or an AI model. They exercise coaching rules, HTTP integration, filtering, account ownership, caching, HTTPS requests, limits, and AI adapter behavior. A separate optional developer check, `python -m tests.browser_smoke`, needs Playwright and Chromium; it is not required for users. That browser runner defaults to `/usr/bin/chromium` in the cloud test environment.
 
-All **83 automated tests** and the desktop/mobile browser checks passed for version 1.0.2. Credential tests use fictitious keys and verify configuration precedence, hidden entry, cache separation, header authentication, redacted errors, and rejected redirects. No real paid key was used in testing. See `VALIDATION.md` for the exact live-data checks and what remains unverified. A separate public reference match also verified real replay-field compatibility; it was not treated as your match history.
+All **103 automated tests** and the dashboard/live-control browser checks passed for version 1.1.0. The live browser suite uses synthetic capture streams and controlled model replies, including manual/periodic requests, stopping during inference, stale-session rejection, and cancelled or black sources. Credential tests use fictitious keys. No real paid key or vision model was used in testing. See `VALIDATION.md` for exact checks and what remains unverified.
 
 **Validation boundary:** the app and browser flows were tested on Linux/Python 3.12, including desktop and mobile layouts. Windows batch execution and actual Ollama inference require testing on the user's Windows PC. Live OpenDota access was initially blocked by the cloud network allowlist; it became available after the configuration update. A live check identified **Tweety, Archon II**, but ranked, recent, and unfiltered match-history requests all returned **zero matches**. This verifies connectivity and the empty-history handling; it does not validate your personal gameplay or live replay analysis. Enable public match data, sign in to OpenDota, and let new matches become available. Private history is only one possible cause of an empty result; it has not been proven. The required `api.opendota.com` network rule and startup instructions are saved in the cloud configuration draft; draft saving is separate from publishing the final prepared filesystem. Ordinary Windows use relies on your own Internet connection.
 
@@ -118,9 +138,11 @@ All **83 automated tests** and the desktop/mobile browser checks passed for vers
 - `coach/analysis.py`: normalization, missing-data handling and explainable coaching.
 - `coach/service.py`: player history, five-match enrichment and single-match import/review.
 - `coach/ai.py`: optional fixed-localhost Ollama adapter.
+- `coach/vision.py`, `static/live.js`, `static/live.css`: optional selected-screen snapshot coaching and its controls.
 - `static/`: responsive interface without CDNs or JavaScript dependencies.
 - `tests/`: unit, HTTP and optional browser checks.
 - `run.bat`: double-click Windows launcher.
+- `setup-live.bat`: explicit optional vision-model download through your installed Ollama.
 
 ## Data sources and attribution
 

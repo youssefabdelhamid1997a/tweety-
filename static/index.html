@@ -7,7 +7,9 @@
   <title>Dota Ascent · Your personal coach</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/live.css">
   <script src="/app.js" defer></script>
+  <script src="/live.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -19,6 +21,7 @@
       <a href="#match-review"><span>▤</span> Match review</a>
       <a href="#training"><span>◎</span> Training plan</a>
       <a href="#ai-coach"><span>✧</span> Ask your coach</a>
+      <a href="#live-coach"><span>◉</span> Live screen coach</a>
       <a href="#method"><span>ⓘ</span> How it works</a>
     </nav>
     <div class="sidebar-bottom"><div class="local-dot">RUNS ON YOUR COMPUTER</div><p>Your Steam password stays yours. Public match data only.</p><span class="powered">Data by OpenDota ↗</span></div>
@@ -67,7 +70,37 @@
       <div class="practice-panel"><div><h3>Your next 5 games</h3><p>Choose one focus. These checkboxes are saved in this browser, separately for each account and sample mode.</p></div><div id="practice-list"><p class="subtle">Load a report to create your personal practice checklist.</p></div></div>
     </section>
     <section id="ai-coach" aria-labelledby="ai-title"><div class="section-header"><div><div class="eyebrow">OPTIONAL · LOCAL AI</div><h2 id="ai-title">Talk through your next move</h2></div><span class="pill">Powered by Ollama</span></div><div class="ai-panel"><p>Ask about the loaded report. Requires Ollama running on this computer with <code>llama3.2:3b</code> installed. The dashboard and replay review work without it.</p><form id="ai-form"><label for="ai-question">Your coaching question</label><div class="ai-input"><textarea id="ai-question" maxlength="1000" rows="2" required placeholder="What should I focus on in my next five games?"></textarea><button class="primary" type="submit">Ask local AI ↗</button></div></form><p class="ai-caveat">AI responses can be wrong. Check claims against the evidence and your in-game replay. Only a small report summary and your question go to your local model.</p><div id="ai-answer" class="ai-answer" role="status" aria-live="polite" hidden></div></div></section>
-    <section id="method" class="method" aria-labelledby="method-title"><span class="method-icon">ⓘ</span><div><h2 id="method-title">Useful coaching starts with honest evidence.</h2><p>The dashboard uses transparent coaching rules, not a trained model or a comparison with Divine players. Optional local AI chat interprets the report but is not a source of new match facts. Neither can watch your camera, understand every fight, or prove why you lost. Targets are starting exercises and depend on your role, hero, matchup, and patch. No rank gain is guaranteed.</p><p>Ranked only. Remakes under 10 minutes and matches this account abandoned are excluded. Safe lane does not automatically mean carry. A manual role is your assumption for all matches in that review. The in-game replay remains the source of context.</p><p>Data goes from OpenDota to a local Python server. No Steam login, uploads to a cloud AI service, telemetry, or CDN assets. Reports and cache may contain public account information; share exports deliberately.</p></div></section>
+    <section id="live-coach" aria-labelledby="live-title">
+      <div class="section-header"><div><div class="eyebrow">OPTIONAL · LOCAL VISION</div><h2 id="live-title">Review the screen you choose</h2></div><span class="pill">Ollama · gemma3:4b</span></div>
+      <div class="live-panel">
+        <p class="live-intro">Choose your Dota window, check the preview, then request a snapshot review. Periodic mode checks one frame at a time with at least 30 seconds between completed checks. It is not a continuous understanding of your match.</p>
+        <p class="live-setup">First run <code>ollama pull gemma3:4b</code> in a separate PowerShell window. Keep Ollama and the coach running. Use Chrome or Edge on your PC; this mode needs no OpenDota API key or match report.</p>
+        <div class="live-settings">
+          <div class="field"><label for="live-hero">Your hero, if known</label><input id="live-hero" maxlength="80" placeholder="e.g. Juggernaut" autocomplete="off"><small>Helps distinguish your hero from the camera view.</small></div>
+          <div class="field"><label for="live-role">Your role this game</label><select id="live-role"><option value="auto">Unspecified</option><option value="carry">1 · Carry</option><option value="mid">2 · Mid</option><option value="offlane">3 · Offlane</option><option value="support">4 · Support</option><option value="hard_support">5 · Hard support</option></select></div>
+          <div class="field"><label for="live-minimap">Optional minimap corner crop</label><select id="live-minimap"><option value="off">Off · full screen only</option><option value="left">Bottom left corner</option><option value="right">Bottom right corner</option></select><small>Choose only if your minimap is in that corner.</small></div>
+          <div class="field"><label for="live-interval">Pause after each check</label><select id="live-interval"><option value="30">30 seconds</option><option value="60">60 seconds</option><option value="90">90 seconds</option></select></div>
+        </div>
+        <div class="live-controls">
+          <button id="live-start" class="primary" data-live-control type="button">1 · Choose Dota window</button>
+          <button id="live-once" class="secondary" data-live-control type="button" disabled>Analyze one snapshot</button>
+          <button id="live-periodic" class="secondary" data-live-control type="button" disabled>Start periodic checks</button>
+          <button id="live-stop" class="live-stop" data-live-control type="button" disabled>Stop sharing</button>
+        </div>
+        <p id="live-status" class="live-status" role="status" aria-live="polite">Not sharing. Nothing is captured or sent until you choose a source and request a check.</p>
+        <p id="live-error" class="live-error" role="alert" hidden></p>
+        <div id="live-preview-wrap" class="live-preview-wrap" hidden><video id="live-preview" autoplay muted playsinline aria-label="Preview of the window or screen you selected"></video><p id="live-source" class="subtle"></p></div>
+        <label class="live-speech-label"><input id="live-speak" type="checkbox"><span>Read fresh advice aloud using an installed local voice</span></label>
+        <p id="live-speech-note" class="subtle">Optional. Speech uses a local browser voice only.</p>
+        <article id="live-result" class="live-result" aria-labelledby="live-result-title" hidden>
+          <div class="live-result-heading"><h3 id="live-result-title">Latest snapshot review</h3><span id="live-result-age" class="subtle"></span></div>
+          <p id="live-result-meta" class="subtle"></p>
+          <div id="live-result-details"><h4>Visible observation</h4><p id="live-observation"></p><h4>Review suggestion</h4><p id="live-advice"></p><h4>Uncertainty</h4><p id="live-uncertainty"></p></div>
+        </article>
+        <p class="live-privacy">Only the source you select is shared. A check sends a JPEG snapshot and your optional corner crop to this local server and local Ollama. This app makes no screen recording, saves no frames or live advice, and captures no audio. Stop sharing ends capture and discards later replies; an analysis already started in Ollama may finish locally. The model can misread the screen and cannot know hidden enemies, your full plan, or events between snapshots. Review suggestions with that context.</p>
+      </div>
+    </section>
+    <section id="method" class="method" aria-labelledby="method-title"><span class="method-icon">ⓘ</span><div><h2 id="method-title">Useful coaching starts with honest evidence.</h2><p>The dashboard uses transparent coaching rules, not a trained model or a comparison with Divine players. Optional report chat interprets the loaded statistics and does not inspect game images. The separate live screen coach reviews selected snapshots with a local vision model; it does not understand a full replay or the continuous match. Neither can guarantee exact positioning judgments or prove why a fight was lost. Targets are starting exercises and depend on your role, hero, matchup, and patch. No rank gain is guaranteed.</p><p>Ranked only for match-history coaching. Remakes under 10 minutes and matches this account abandoned are excluded. Safe lane does not automatically mean carry. A manual role is your assumption for all matches in that review. The in-game replay remains the source of context.</p><p>Data goes from OpenDota to a local Python server. Live screen snapshots go only to the selected local vision workflow. No Steam login, uploads to a cloud AI service, telemetry, or CDN assets. Reports and cache may contain public account information; share exports deliberately.</p></div></section>
     <footer><a href="#overview" class="footer-brand">DOTA ASCENT <span>↗</span></a><span>Built for deliberate practice. Powered by public OpenDota data.</span><a href="https://www.opendota.com/players/314758455" target="_blank" rel="noopener noreferrer">Your OpenDota profile ↗</a></footer>
   </main>
 </body>
